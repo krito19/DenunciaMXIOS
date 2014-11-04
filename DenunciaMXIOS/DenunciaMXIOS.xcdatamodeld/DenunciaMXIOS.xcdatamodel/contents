@@ -1,4 +1,54 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model name="Test1.xcdatamodel" userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="1" systemVersion="11A491" minimumToolsVersion="Automatic" macOSVersion="Automatic" iOSVersion="Automatic">
-    <elements/>
+<model userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="6244" systemVersion="13F34" minimumToolsVersion="Automatic" macOSVersion="Automatic" iOSVersion="Automatic">
+    <entity name="Denuncia" representedClassName="Denuncia" syncable="YES">
+        <attribute name="anonima" optional="YES" attributeType="Boolean" syncable="YES"/>
+        <attribute name="correo" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="enviada" optional="YES" attributeType="Integer 16" defaultValueString="0" syncable="YES"/>
+        <attribute name="fechaRegistro" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="idDenuncia" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="idDependencia" optional="YES" attributeType="Integer 16" defaultValueString="0" syncable="YES"/>
+        <attribute name="idSFP" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="latitud" optional="YES" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="longuitud" optional="YES" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="r1" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="r2" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="r3" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="r4" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="r5" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="terminada" optional="YES" attributeType="Boolean" defaultValueString="0" syncable="YES"/>
+        <attribute name="titulo" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="token" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="denunciaevidencia" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Evidencia" inverseName="evidenciadenuncia" inverseEntity="Evidencia" syncable="YES"/>
+        <relationship name="denunciastatus" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="StatusHistorial" inverseName="statusdenuncia" inverseEntity="StatusHistorial" syncable="YES"/>
+    </entity>
+    <entity name="Evidencia" representedClassName="Evidencia" syncable="YES">
+        <attribute name="enviados" optional="YES" attributeType="Integer 64" defaultValueString="0" syncable="YES"/>
+        <attribute name="eviado" optional="YES" attributeType="Boolean" syncable="YES"/>
+        <attribute name="idDenuncia" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="nombre" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="ruta" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="tipo" optional="YES" attributeType="Integer 16" defaultValueString="0" syncable="YES"/>
+        <attribute name="totales" optional="YES" attributeType="Integer 64" defaultValueString="0" syncable="YES"/>
+        <relationship name="evidenciadenuncia" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Denuncia" inverseName="denunciaevidencia" inverseEntity="Denuncia" syncable="YES"/>
+    </entity>
+    <entity name="StatusHistorial" representedClassName="StatusHistorial" syncable="YES">
+        <attribute name="fecha" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="idDenuncia" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="idStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" syncable="YES"/>
+        <attribute name="leida" optional="YES" attributeType="Boolean" syncable="YES"/>
+        <attribute name="mensaje" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="statusdenuncia" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Denuncia" inverseName="denunciastatus" inverseEntity="Denuncia" syncable="YES"/>
+    </entity>
+    <entity name="Usuario" representedClassName="Usuario" syncable="YES">
+        <attribute name="correo" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="direccion" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="nombre" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="token" optional="YES" attributeType="String" syncable="YES"/>
+    </entity>
+    <elements>
+        <element name="Denuncia" positionX="-63" positionY="-18" width="128" height="328"/>
+        <element name="Evidencia" positionX="-63" positionY="90" width="128" height="163"/>
+        <element name="StatusHistorial" positionX="-54" positionY="108" width="128" height="133"/>
+        <element name="Usuario" positionX="-36" positionY="117" width="128" height="103"/>
+    </elements>
 </model>

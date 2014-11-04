@@ -7,6 +7,12 @@
 //
 
 #import "AppDelegate.h"
+#import "AWSCore.h"
+#import "AWSCredentialsProvider.h"
+#import "WSManager.h"
+#import "JSONParser.h"
+#import "AmazonManager.h"
+#import "DBManager.h"
 
 @interface AppDelegate ()
 
@@ -14,28 +20,126 @@
 
 @implementation AppDelegate
 
+#pragma mark - Push Notifications Managment
 
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    // Override point for customization after application launch.
+- (void)application:(UIApplication*)application didFailToRegisterForRemoteNotificationsWithError:(NSError*)error
+{
+    NSLog(@"Failed to get token, error: %@", error);
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:@"ST" forKey:@"Token"];
+    [defaults synchronize];
+
+}
+
+-(void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
+{
+    NSString *str = [NSString stringWithFormat:@"%@",deviceToken];
+    str = [str stringByReplacingOccurrencesOfString:@" " withString:@""];
+    
+    NSString *strToken = [str stringByReplacingOccurrencesOfString:@"<" withString:@""];
+    strToken = [strToken stringByReplacingOccurrencesOfString:@">" withString:@""];
+    
+    NSLog(@"TOKEN: %@",strToken);
+    
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSString *token = [defaults objectForKey:@"Token"];
+    if (token == nil || ![token isEqualToString:strToken])
+    {
+        [defaults setObject:strToken forKey:@"Token"];
+        [defaults synchronize];
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0),
+                       ^{
+                           NSString *content = [JSONParser JSONStringForDevice];
+                           NSDictionary *dic = [WSManager registrarDeviceConContent:content];
+                           BOOL suc = [[dic objectForKey:@"success"] boolValue];
+                           
+                           if (suc)
+                               NSLog(@"Registrado Exitósamente");
+                           else
+                               NSLog(@"No se pudo registrar");
+                       });
+    }
+    
+}
+
+- (void)application:(UIApplication*)application didReceiveRemoteNotification:(NSDictionary*)userInfo
+{
+    NSLog(@"Received notification: %@", userInfo);
+    
+    [JSONParser parserJSONForStatus:userInfo];
+    DBManager *db = [DBManager sharedDBManager];
+    [db saveContext];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"PushNotificationMessageReceivedNotification" object:nil userInfo:userInfo];
+}
+
+
+#pragma mark - Defaults
+
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+{
+    
+    AWSCognitoCredentialsProvider *credentialsProvider = [AWSCognitoCredentialsProvider
+                                                          credentialsWithRegionType:AWSRegionUSEast1
+                                                          accountId:@""
+                                                          identityPoolId:@""
+                                                          unauthRoleArn:@""
+                                                          authRoleArn:@""];
+    
+    AWSServiceConfiguration *configuration = [AWSServiceConfiguration configurationWithRegion:AWSRegionUSEast1
+                                                                          credentialsProvider:credentialsProvider];
+    
+    [AWSServiceManager defaultServiceManager].defaultServiceConfiguration = configuration;
+    
+    if ([[UIApplication sharedApplication]respondsToSelector:@selector(isRegisteredForRemoteNotifications)])
+    {
+        // iOS 8 Notifications
+        [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:(UIUserNotificationTypeSound | UIUserNotificationTypeAlert | UIUserNotificationTypeBadge) categories:nil]];
+        
+        [[UIApplication sharedApplication] registerForRemoteNotifications];
+    }
+    else
+    {
+        // iOS < 8 Notifications
+        [[UIApplication sharedApplication] registerForRemoteNotificationTypes:
+         (UIUserNotificationTypeBadge | UIUserNotificationTypeSound | UIUserNotificationTypeAlert)];
+    }
+    
+    [[UIApplication sharedApplication] setApplicationIconBadgeNumber:0];
+    
+    NSDictionary *userInfo = [launchOptions objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
+    if (userInfo)
+    {
+        NSLog(@"Received notification: %@", userInfo);
+        
+        [JSONParser parserJSONForStatus:userInfo];
+        DBManager *db = [DBManager sharedDBManager];
+        [db saveContext];
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"PushNotificationMessageReceivedNotification" object:nil userInfo:userInfo];
+    }
+    
     return YES;
 }
 
-- (void)applicationWillResignActive:(UIApplication *)application {
-    // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
-    // Use this method to pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. Games should use this method to pause the game.
+- (void)applicationWillResignActive:(UIApplication *)application
+{
+    AmazonManager *am = [AmazonManager sharedAManager];
+    [am pauseAll];
 }
 
-- (void)applicationDidEnterBackground:(UIApplication *)application {
-    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
-    // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
+- (void)applicationDidEnterBackground:(UIApplication *)application
+{
+    AmazonManager *am = [AmazonManager sharedAManager];
+    [am pauseAll];
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application {
     // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
 }
 
-- (void)applicationDidBecomeActive:(UIApplication *)application {
-    // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+- (void)applicationDidBecomeActive:(UIApplication *)application
+{
+    AmazonManager *am = [AmazonManager sharedAManager];
+    [am resumeAll];
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application {
@@ -111,7 +215,8 @@
 
 #pragma mark - Core Data Saving support
 
-- (void)saveContext {
+- (void)saveContext
+{
     NSManagedObjectContext *managedObjectContext = self.managedObjectContext;
     if (managedObjectContext != nil) {
         NSError *error = nil;
